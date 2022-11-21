@@ -111,8 +111,7 @@ int32_t platform_wrapper_init_device(struct platform_ctx *ctx,
 
         rc = tmf882x_fwdl(ctx->tof, FWDL_TYPE_HEX, hex_records, hex_size);
         if (rc) {
-            fprintf(stderr, "Error (%d) performing FWDL with hex records\n",
-                    rc);
+            fprintf(stderr, "Error (%d) performing FWDL with hex records\n",rc);
             return rc;
         }
 
