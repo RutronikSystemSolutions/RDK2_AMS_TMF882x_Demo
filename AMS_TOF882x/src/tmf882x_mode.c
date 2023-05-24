@@ -55,7 +55,7 @@ static int32_t tmf882x_wait_for_cpu_ready(struct tmf882x_mode *self)
     while (retry++ < TMF882X_MAX_RETRY) {
         error = tof_get_register(to_priv(self), TMF882X_STAT, &status);
         if (error) {
-            tof_err(to_priv(self), "CPU status read failed, attempt %d: %d\r\n" , retry, error);
+            tof_err(to_priv(self), "CPU status read failed, attempt %ld: %ld\r\n" , retry, error);
             tmf882x_mode_standby_operation(self, TOF_WAKEUP);
             continue;
         }
@@ -188,7 +188,7 @@ static int32_t tmf882x_mode_open(struct tmf882x_mode *self)
                          self->info_rec.data,
                          sizeof(self->info_rec.record));
     if (error) {
-        tof_err(to_priv(self), "read record failed: %d", error);
+        tof_err(to_priv(self), "read record failed: %ld", error);
         return error;
     }
     tof_info(to_priv(self),
@@ -216,7 +216,7 @@ void tmf882x_dump_data(struct tmf882x_mode *self, const uint8_t *dbuf, size_t le
 
     for (idx = 0; idx < len; idx += per_line) {
         cnt += snprintf((char *)buf, sizeof(buf) - cnt,
-                        "buffer dump [%02x]: ", idx);
+                        "buffer dump [%lu]: ", idx);
         for (per_line_idx = 0;
              (per_line_idx < per_line) && ((idx + per_line_idx) < len);
              per_line_idx++) {

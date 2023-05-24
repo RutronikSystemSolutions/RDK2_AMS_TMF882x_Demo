@@ -6,11 +6,7 @@
  */
 
 #include <stdint.h>
-//#include "board.h"
-//#include "fsl_gpio.h"
-//#include "fsl_i2c.h"
-//#include "fsl_utick.h"
-//#include "fsl_debug_console.h"
+
 #include "tmf882x.h"
 #include "tmf882x_interface.h"
 #include "tof_bin_image.h"
@@ -28,31 +24,32 @@
 #define TMF882X_DEMO_VER          STRINGIFY(TMF882X_DEMO_MAJ_VER) "." \
                                   STRINGIFY(TMF882X_DEMO_MIN_VER)
 
-#define EXAMPLE_SIMPLE_MAX_CH     9
 #define TMF882X_I2C_ADDR          0x41
 #define PERIODIC_UTICK_CNT        601
 #define POLL_PERIOD_MS            20000
 #define DEBOUNCE_PERIOD_MS        50000
 #define SW_DEBOUNCE_CNT           (((DEBOUNCE_PERIOD_MS) / (POLL_PERIOD_MS)) + 1)
-// Currently the CE port is connected to the BLUE LED GPIO on the devkit board
-//#define CE_GPIO_PORT              BOARD_LED_BLUE_GPIO_PORT
-//#define CE_GPIO_PIN               BOARD_LED_BLUE_GPIO_PIN
 
+// Wrapper for printf
+#define PRINTF printf
 
-//wrapper for rtdk2**********************
-#define PRINTF printf //wrapper for printf
+/**
+ * If defined, then the 8x8 mode will be used
+ * If not defined, the 3x3 mode will be used
+ */
+#undef USE_8X8_MODE
 
 /***************************************************
  *     0: only output results/data from device
  *     1: output info level messages from core driver
  *     2+: output debug level messages from core driver
  ***************************************************/
-const uint32_t g_core_drv_logging = 2;
+const uint32_t g_core_drv_logging = 1;
 
-// microsecond counter used for timing needed by the tmf882x core driver
-//static volatile uint32_t usec_cnt = 0;
+
 // TMF882x core driver context
 static struct tmf882x_tof tof;
+
 // TMF882x core driver APP mode-specific config structure
 static struct tmf882x_mode_app_config tofcfg;
 
@@ -66,38 +63,21 @@ struct platform_ctx tof_ctx =
 		.gpio_irq = 0,
 		.i2c_addr = TMF882X_I2C_ADDR,
 		.i2cdev = "AMS_TOF_RUTRONIK",
+#ifdef USE_8X8_MODE
 		.mode_8x8 = 1,
+#else
+		.mode_8x8 = 0,
+#endif
 		.tof = &tof,
 	};
-
-
 
 /*
  * This function provides the core driver a way to retrieve relative
  * timestamps at microsecond resolution.
  */
 uint32_t get_uticks(void) {
-    uint32_t ticks;
-//    DisableIRQ(UTICK0_IRQn);
-//    ticks = usec_cnt;
-//    EnableIRQ(UTICK0_IRQn);
-    ticks = cyhal_timer_read(&Systick_obj);
-
-    return ticks;
+    return cyhal_timer_read(&Systick_obj);
 }
-
-/*
- * This function is called by the UTICK driver core periodically
- */
-//static void periodic_cb(void) {
-//    /* Periodically update our usec counter, this is not a true 1MHz counter,
-//     * but it is close enough for the needs of the demo. The true resolution
-//     * of the usec counter is = 1MHz / PERIODIC_UTICK_CNT
-//     */
-//    uint32_t temp = usec_cnt;
-//    temp += PERIODIC_UTICK_CNT;
-//    usec_cnt = temp;
-//}
 
 static void power_on_tmf882x(void)
 {
@@ -111,111 +91,54 @@ static void power_on_tmf882x(void)
  */
 static void update_board_led(bool measuring) {
     if (measuring)
-       // LED_GREEN_ON();
-	cyhal_gpio_write(LED1, false);
+    {
+       // Turn LED green ON
+    	cyhal_gpio_write(LED1, false);
+    }
     else
-        //LED_GREEN_OFF();
-	cyhal_gpio_write(LED1, true);
+    {
+    	// Turn LED green OFF
+    	cyhal_gpio_write(LED1, true);
+    }
 }
 
 /*
- * Simple debounce routine to check if the user hit the 'ISP' button
- * on the board.
+ * Simple debounce routine to check if the user hit the 'ISP' button on the board.
+ *
+ * @retval 0 No valid 0->1 transition of the switch
+ * @retval != A valid transition has been detected
  */
 static bool user_pressed_measure_toggle_button(uint32_t *gpio_history) {
-    // return debounced 0->1 transition of ISP switch
-    if (!gpio_history)
-        return false;
+    if (!gpio_history) return false;
+
     uint32_t gpio_hist = *gpio_history;
-    //gpio_hist = (gpio_hist << 1)| GPIO_PinRead(GPIO, BOARD_SW1_GPIO_PORT, BOARD_SW1_GPIO_PIN);
     gpio_hist = (gpio_hist << 1)| !cyhal_gpio_read(USER_BTN1);
     *gpio_history = gpio_hist;
+
     return ((gpio_hist & ((1 << SW_DEBOUNCE_CNT) - 1))
             == ((1 << (SW_DEBOUNCE_CNT - 1)) - 1));
-}
-
-/*
- * Log measure results to the UART as they come from the device.
- * See "tmf882x.h" for sensor output data type definitions.
- */
-static void log_result(struct tmf882x_msg_meas_results *result_msg) {
-    uint32_t distances_cm[TMF882X_MAX_MEAS_RESULTS] = { 0 };
-
-    if (!result_msg)
-        return;
-
-    for (uint32_t hit = 0, idx = 0; hit < result_msg->num_results; ++hit) {
-        idx = result_msg->results[hit].channel - 1;    // channel '0' is the reference channel
-        idx += result_msg->results[hit].sub_capture * EXAMPLE_SIMPLE_MAX_CH;
-        distances_cm[idx] = result_msg->results[hit].distance_mm / 10;
-        
-        /*
-         * To print the confidence level of the result reported
-         * PRINTF("conf: %u ", result_msg->results[hit].confidence);
-         */
-    }
-
-    // Print distance results of the example channels
-    for (uint32_t idx = 0; idx < EXAMPLE_SIMPLE_MAX_CH; ++idx) {
-        PRINTF("%4.0u", (unsigned int)distances_cm[idx]);
-    }
-
-    PRINTF("\r\n");
-    return;
 }
 
 /*
  * Simple microsecond delay routine
  */
 void ams_delay_us(uint32_t usec)
-    {
-    if(usec>65535)
+{
+	if(usec>65535)
 	{
-	cyhal_system_delay_ms(usec/1000);
+		cyhal_system_delay_ms(usec/1000);
 	}
-    else
+	else
 	{
-	cyhal_system_delay_us(usec); // para in --> uint16_t
+		cyhal_system_delay_us(usec); // param in --> uint16_t
 	}
-
-//    uint32_t start = get_uticks();
-//    while (usec > (get_uticks() - start)) {
-//        __asm("NOP");
-//        __asm("NOP");
-//        __asm("NOP");
-//    }
 }
 
-/**************************************************************************
- *
- * Callback function to handle output data from the TMF882x core driver
- *  - all output data after processing IRQs is of type 'struct tmf882x_msg'
- *  - See "tmf882x.h" for output data message type definitions
- *
- *************************************************************************/
-int32_t tmf882x_mcu_handle_msg(void *ctx, struct tmf882x_msg *msg) {
-    if (!msg)
-        return -1;
-
-    switch (msg->hdr.msg_id) {
-    case ID_MEAS_RESULTS:
-        log_result(&msg->meas_result_msg);
-        break;
-    default:
-        break;
-    }
-
-    return 0;
-}
 
 /*
  * Demo run routine, never returns
  */
 void tmf882x_example_run(void) {
-
-
-
-
     // Temporary variable for storing version info
     uint8_t ver[16] = { 0 };
     bool is_measuring = false;
@@ -254,7 +177,7 @@ void tmf882x_example_run(void) {
      *
      *************************************************************************/
     if (g_core_drv_logging > 1)
-	tmf882x_set_debug(&tof, false);
+    	tmf882x_set_debug(&tof, true);
 
     /**************************************************************************
      *
@@ -306,7 +229,11 @@ void tmf882x_example_run(void) {
      *  - IOCAPP_SET_8X8MODE is the ioctl command code used to set the 8x8 mode
      *
      *************************************************************************/
+#ifdef USE_8X8_MODE
+    bool mode_8x8 = true;
+#else
     bool mode_8x8 = false;
+#endif
     while (tmf882x_ioctl(&tof, IOCAPP_SET_8X8MODE, &mode_8x8, NULL)) {
         PRINTF("Error disabling 8x8 mode, retrying...\r\n");
         ams_delay_us(3000000);
@@ -329,10 +256,15 @@ void tmf882x_example_run(void) {
      * Change the APP configuration
      *  - set the reporting period to 500 milliseconds
      *  - set the spad map configuration to 3x3 (33x32 degree FoV)
+     *  OR in case of 8x8 mode set the period to 100ms (update every 400ms since we need 4 frames)
      *
      *************************************************************************/
+#ifdef USE_8X8_MODE
+    tofcfg.report_period_ms = 100;
+#else
     tofcfg.report_period_ms = 500;
     tofcfg.spad_map_id = 1;
+#endif
 
     /**************************************************************************
      *

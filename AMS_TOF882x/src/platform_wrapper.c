@@ -40,6 +40,15 @@
 #define TMF882X_DEFAULT_ITERATIONS    550
 #define TMF882X_DEFAULT_REP_PERIOD_MS 30
 
+
+/**
+ * Following defines are needed to display the values of the sensor in case
+ * the 8x8 mode is selected
+ */
+#define NUM_MEAS_MSG_IN_8X8		  4
+#define NUM_ROWS_IN_8X8           8
+#define NUM_COLS_IN_8X8           8
+
 static void print_result(struct platform_ctx *ctx, struct tmf882x_msg_meas_results *result_msg)
 {
     if (!ctx || !result_msg)
@@ -47,28 +56,75 @@ static void print_result(struct platform_ctx *ctx, struct tmf882x_msg_meas_resul
     	return;
     }
 
-    printf("\x1b[2J\x1b[;H");
-    printf("\n\r");
-    printf("    TMF8820 3x3 multi-zone Time-of-Flight Sensor\n\r");
-    printf("measurement_num: %u num_results: %u\n\r",
-    		(unsigned int)result_msg->result_num,
-			(unsigned int)result_msg->num_results);
+	if (ctx->mode_8x8 != 0)
+	{
+		static struct tmf882x_msg_meas_results msgs[NUM_MEAS_MSG_IN_8X8] = {0};
+		uint32_t distances_cm[64] = { 0 };
+		uint32_t msg_idx = 0;
+		uint32_t row = 0, col = 0, ch = 0;
 
-    for (uint32_t i = 0; i < result_msg->num_results; ++i)
-    {
-        printf("conf: %u distance_mm: %u channel: %u sub_capture: %u\n\r",
-        		(unsigned int)result_msg->results[i].confidence,
-				(unsigned int)result_msg->results[i].distance_mm,
-				(unsigned int)result_msg->results[i].channel,
-				(unsigned int)result_msg->results[i].sub_capture);
-    }
+		// which measurement in the 4x group is this?
+		msg_idx = result_msg->result_num % NUM_MEAS_MSG_IN_8X8;
 
-    printf("photon: %u ref_photon: %u ALS: %u\n\r",
-    		(unsigned int)result_msg->photon_count,
-			(unsigned int)result_msg->ref_photon_count,
-			(unsigned int)result_msg->ambient_light);
+		// Buffer up 4 messages (for 64 zones)
+		memcpy(&msgs[msg_idx], result_msg, sizeof(*msgs));
 
-    return;
+		if (msg_idx != (NUM_MEAS_MSG_IN_8X8 - 1))
+			return;	// wait until we have all measurement messages in an 8x8 group before logging
+
+		// Map 4 measurement messages to one combined 64 pixel depth map
+		for (uint32_t idx = 0; idx < NUM_MEAS_MSG_IN_8X8; ++idx) {
+			for (uint32_t res = 0; res < msgs[idx].num_results; ++res) {
+
+				// Result Number, SubCapture, Channel indicate 1:64 zone mapping
+				ch = msgs[idx].results[res].channel;
+				row = col = 0;
+
+				row += (1 - (ch - 1) / 4) * 4;
+				row += (1 - (((ch - 1) % 4) / 2)) * 2;
+				row += (1 - idx/2);
+
+				col += (1 - (ch % 2)) * 4;
+				col += (idx % 2) * 2;
+				col += msgs[idx].results[res].sub_capture;
+
+				distances_cm[row * NUM_COLS_IN_8X8 + col] = msgs[idx].results[res].distance_mm / 10;
+			}
+		}
+
+		// Print 8x8 distance results (1st object only)
+		for (uint32_t idx = 0; idx < sizeof(distances_cm)/sizeof(*distances_cm); ++idx) {
+			printf("%4.0lu", distances_cm[idx]);
+			if (((idx+1) % 8) == 0) { // print in 8x8 grid
+				printf("\r\n");
+			}
+		}
+
+		printf("\r\n\r\n");
+	}
+	else
+	{
+		printf("\x1b[2J\x1b[;H");
+		printf("\n\r");
+		printf("    TMF8820 3x3 multi-zone Time-of-Flight Sensor\n\r");
+		printf("measurement_num: %u num_results: %u\n\r",
+				(unsigned int)result_msg->result_num,
+				(unsigned int)result_msg->num_results);
+
+		for (uint32_t i = 0; i < result_msg->num_results; ++i)
+		{
+			printf("conf: %u distance_mm: %u channel: %u sub_capture: %u\n\r",
+					(unsigned int)result_msg->results[i].confidence,
+					(unsigned int)result_msg->results[i].distance_mm,
+					(unsigned int)result_msg->results[i].channel,
+					(unsigned int)result_msg->results[i].sub_capture);
+		}
+
+		printf("photon: %u ref_photon: %u ALS: %u\n\r",
+				(unsigned int)result_msg->photon_count,
+				(unsigned int)result_msg->ref_photon_count,
+				(unsigned int)result_msg->ambient_light);
+	}
 }
 
 int32_t platform_wrapper_power_on(struct platform_ctx *ctx)
@@ -111,7 +167,7 @@ int32_t platform_wrapper_init_device(struct platform_ctx *ctx,
 
         rc = tmf882x_fwdl(ctx->tof, FWDL_TYPE_HEX, hex_records, hex_size);
         if (rc) {
-            fprintf(stderr, "Error (%d) performing FWDL with hex records\n",rc);
+            fprintf(stderr, "Error (%ld) performing FWDL with hex records\n",rc);
             return rc;
         }
 
@@ -272,7 +328,7 @@ void platform_wrapper_start_measurements(struct platform_ctx *ctx,
         usleep(5000); // poll period
         if (num_measurements &&
             ctx->curr_num_measurements == num_measurements) {
-            printf("Read %u results\n", num_measurements);
+            printf("Read %lu results\n", num_measurements);
             break;
         }
     }
