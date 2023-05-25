@@ -195,7 +195,7 @@ int32_t tmf882x_ioctl(struct tmf882x_tof *tof, uint32_t cmd, const void *input, 
     if (tof && tof->state.ops->ioctl)
 	{
 	if (tof->state.debug)
-	    tof_info(to_priv(&tof->state), "%s: dir: 0x%x mode: 0x%x isize: 0x%x osize: 0x%x cmd: 0x%x", __func__, _IOCTL_DIR(cmd), _IOCTL_MODE(cmd), _IOCTL_ISIZE(cmd),
+	    tof_info(to_priv(&tof->state), "%s: dir: %lu mode: %lu isize: %lu osize: %lu cmd: %lu", __func__, _IOCTL_DIR(cmd), _IOCTL_MODE(cmd), _IOCTL_ISIZE(cmd),
 		    _IOCTL_OSIZE(cmd), _IOCTL_NR(cmd));
 	rc = tof->state.ops->ioctl(&tof->state, cmd, input, output);
 
@@ -210,7 +210,7 @@ inline tmf882x_mode_t tmf882x_get_mode(struct tmf882x_tof *tof)
 
 int32_t tmf882x_get_firmware_ver(struct tmf882x_tof *tof, uint8_t *ver, size_t len)
 {
-    return tmf882x_mode_version(&tof->state, ver, len);
+    return tmf882x_mode_version(&tof->state, (char *)ver, len);
 }
 
 int32_t tmf882x_get_device_revision(struct tmf882x_tof *tof, uint8_t *rev_buf, size_t len)

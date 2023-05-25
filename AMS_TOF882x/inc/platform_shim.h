@@ -38,7 +38,6 @@
 
 #define tof_err(p, fmt, ...) \
 ({ \
-    struct platform_ctx *__ctx = (struct platform_ctx*)p; \
     fprintf(stderr, fmt "\n\r", ##__VA_ARGS__); \
 })
 

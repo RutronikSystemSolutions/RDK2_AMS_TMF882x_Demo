@@ -146,7 +146,7 @@ int32_t tmf882x_mode_bl_read_status(struct tmf882x_mode_bl *bl,
             return 0;
         }
     } while ((error == 0) && (num_retries > 0));
-    tof_dbg(priv(bl), "bl mode wait for response: \'%d\'", error);
+    tof_dbg(priv(bl), "bl mode wait for response: \'%ld\'", error);
     return error;
 }
 
@@ -344,7 +344,7 @@ static int32_t hex_fwdl(struct tmf882x_mode_bl *bl, const uint8_t *buf, size_t l
         if (size < 0) {
             tmf882x_dump_i2c_regs(to_parent(bl));
             tof_err(priv(bl),
-                    "%s: Ram patch failed: %d", __func__, size);
+                    "%s: Ram patch failed: %ld", __func__, size);
             return size;
         }
 
@@ -354,27 +354,27 @@ static int32_t hex_fwdl(struct tmf882x_mode_bl *bl, const uint8_t *buf, size_t l
         error = tmf882x_mode_bl_addr_ram(bl, addr);
         if (error) {
             tmf882x_dump_i2c_regs(to_parent(bl));
-            tof_info(priv(bl), "Error setting start addr %#x: \'%d\'",
+            tof_info(priv(bl), "Error setting start addr %lu: \'%ld\'",
                      addr, error);
             return error;
         }
 
         error = tmf882x_mode_bl_write_ram(bl, bin, size);
         if (error) {
-            tof_info(priv(bl), "Error writing RAM: \'%d\'", error);
+            tof_info(priv(bl), "Error writing RAM: \'%ld\'", error);
             tmf882x_dump_i2c_regs(to_parent(bl));
             return error;
         }
     }
 
-    tof_info(priv(bl), "%s: patch size: %u B", __func__, patch_size);
+    tof_info(priv(bl), "%s: patch size: %lu B", __func__, patch_size);
 
     // If EOF is reached, issue RAM_REMAP command
     if ( ihexi_is_eof(&bl->hex) ) {
         error = tmf882x_mode_bl_ram_remap(bl);
         if (error) {
             tmf882x_dump_i2c_regs(to_parent(bl));
-            tof_info(priv(bl), "Error RAM REMAPRESET command: \'%d\'", error);
+            tof_info(priv(bl), "Error RAM REMAPRESET command: \'%ld\'", error);
             return error;
         }
         // FWDL is successful
@@ -396,19 +396,19 @@ static int32_t bin_fwdl(struct tmf882x_mode_bl *bl, const uint8_t *buf, size_t l
 
     error = tmf882x_mode_bl_addr_ram(bl, BL_DEFAULT_BIN_START_ADDR);
     if (error) {
-        tof_info(priv(bl), "Error setting start addr: \'%d\'", error);
+        tof_info(priv(bl), "Error setting start addr: \'%ld\'", error);
         return error;
     }
 
     error = tmf882x_mode_bl_write_ram(bl, buf, len);
     if (error) {
-        tof_info(priv(bl), "Error writing RAM: \'%d\'", error);
+        tof_info(priv(bl), "Error writing RAM: \'%ld\'", error);
         return error;
     }
 
     error = tmf882x_mode_bl_ram_remap(bl);
     if (error) {
-        tof_info(priv(bl), "Error RAM REMAPRESET command: \'%d\'", error);
+        tof_info(priv(bl), "Error RAM REMAPRESET command: \'%ld\'", error);
         return error;
     }
 
@@ -435,40 +435,46 @@ static int32_t tmf882x_mode_bl_app_switch(struct tmf882x_mode *self, uint32_t mo
     return rc;
 }
 
-	static int32_t tmf882x_mode_bl_fwdl(struct tmf882x_mode *self, int32_t fwdl_type, const uint8_t *buf, size_t len) { volatile int32_t rc = -1; struct tmf882x_mode_bl *bl;
+static int32_t tmf882x_mode_bl_fwdl(struct tmf882x_mode *self, int32_t fwdl_type, const uint8_t *buf, size_t len)
+{
+	volatile int32_t rc = -1;
+	struct tmf882x_mode_bl *bl;
 
-	if (!verify_mode(self)) return -1; bl = member_of(self, struct tmf882x_mode_bl, mode);
+	if (!verify_mode(self)) return -1;
+
+	bl = member_of(self, struct tmf882x_mode_bl, mode);
 
 	if (TMF882X_BL_ENCRYPT_FLAG)
-	    {
-	    rc = tmf882x_mode_bl_upload_init(bl, BL_DEFAULT_SALT);
-
-	    if (rc)
+	{
+		rc = tmf882x_mode_bl_upload_init(bl, BL_DEFAULT_SALT);
+		if (rc)
 		{
-		tof_info(priv(bl), "Error setting upload salt: \'%d\'", rc); return rc;
+			tof_info(priv(bl), "Error setting upload salt: \'%ld\'", rc); return rc;
 		}
-	    }
+	}
 
-    switch (fwdl_type)
+	switch (fwdl_type)
 	{
 #if (CONFIG_TMF882X_INTELHEX_SUPPORT())
-        case FWDL_TYPE_HEX:
-            rc = hex_fwdl(bl, buf, len);
-            break;
+		case FWDL_TYPE_HEX:
+			rc = hex_fwdl(bl, buf, len);
+			break;
 #endif
-        case FWDL_TYPE_BIN:
-            rc = bin_fwdl(bl, buf, len);
-            break;
-        default:
-            tof_err(priv(bl), "Error invalid fwdl_type: \'%u\'", fwdl_type);
-            return rc;
-    }
+		case FWDL_TYPE_BIN:
+			rc = bin_fwdl(bl, buf, len);
+			break;
+		default:
+			tof_err(priv(bl), "Error invalid fwdl_type: \'%ld\'", fwdl_type);
+			return rc;
+	}
 
-    if (0 == rc)
-        // close the bootloader because we are switching apps
-        tmf882x_mode_bl_close(self);
+	if (0 == rc)
+	{
+		// close the bootloader because we are switching apps
+		tmf882x_mode_bl_close(self);
+	}
 
-    return rc;
+	return rc;
 }
 
 static const struct mode_vtable ops = {

@@ -2,7 +2,7 @@
 
 Rutronik Development Kit Programmable System-on-Chip CY8C6245AZI-S3D72 "RDK2 ams MS-TMF882x-01" Code Example. 
 
-This code example demonstrates the ams ToF sensor's TMF8820 capabilities.
+This code example demonstrates the ams ToF sensor's TMF8820 and TMF8828 capabilities.
 
  <img src="images/rutdevkit_model.png" style="zoom:20%;" />
 
@@ -18,10 +18,19 @@ This code example demonstrates the ams ToF sensor's TMF8820 capabilities.
 
 ### Operation
 
-The firmware example uses KitProg3 Debug UART for the debug output. The results are read from the sensor and are printed on the terminal window. The distance of every sensor is represented in millimeters.
+The firmware example uses KitProg3 Debug UART for the debug output. The results are read from the sensor and are printed on the terminal window. The distance of every sensor is represented in millimeters (if choosing the 3x3 mode) or in centimeters (if choosing the 8x8 mode).
+
+Example of the console output for the 3x3 mode:
 
 <img src="images/tmf8820_info.png" style="zoom:100%;" />
 
+To select between 3x3 or 8x8 mode, just change the define in the file <b>AMS_TOF882x\Example\Simple\tmf882x_example_simple.c</b> line 40.
+
+    /**
+    * If defined, then the 8x8 mode will be used
+    * If not defined, the 3x3 mode will be used
+    */
+    #undef USE_8X8_MODE
 
 
 The additional debugging information can be enabled or disabled by modifying the code in a "tmf882x_example_simple.c" file. 

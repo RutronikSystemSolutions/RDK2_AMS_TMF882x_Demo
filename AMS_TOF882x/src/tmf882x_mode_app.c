@@ -301,14 +301,14 @@ static void dump_config(struct tmf882x_mode_app *app,
     tof_info(priv(app), "  iterations: %u", (cfg->kilo_iterations) << 10);
     tof_info(priv(app), "  low_threshold: %u", cfg->low_threshold);
     tof_info(priv(app), "  high_threshold: %u", cfg->high_threshold);
-    tof_info(priv(app), "  zone_mask: %#x", cfg->zone_mask);
+    tof_info(priv(app), "  zone_mask: %lu", cfg->zone_mask);
     tof_info(priv(app), "  persistence: %u", cfg->persistence);
     tof_info(priv(app), "  confidence_threshold: %u", cfg->confidence_threshold);
     tof_info(priv(app), "  gpio_0: %#x", cfg->gpio_0);
     tof_info(priv(app), "  gpio_1: %#x", cfg->gpio_1);
     tof_info(priv(app), "  power_cfg: %#x", cfg->power_cfg);
     tof_info(priv(app), "  spad_map_id: %u", cfg->spad_map_id);
-    tof_info(priv(app), "  alg_setting: %#x", cfg->alg_setting);
+    tof_info(priv(app), "  alg_setting: %lu", cfg->alg_setting);
     tof_info(priv(app), "  histogram_dump: %#x", cfg->histogram_dump);
     tof_info(priv(app), "  spread_spectrum: %#x", cfg->spread_spectrum);
     tof_info(priv(app), "  i2c_slave_addr: %#x", cfg->i2c_slave_addr);
@@ -343,14 +343,14 @@ static void dump_spad_config(struct tmf882x_mode_app *app,
         for (x = 0, t = 0; x < xsize; ++x)
             t += snprintf((char *)spad_map_str + t, sizeof(spad_map_str) - t,
                           "%u ", !!(spad_cfg->spad_mask[y*xsize + x]));
-        tof_info(priv(app), "    [%u]: %s", ysize - y - 1, spad_map_str);
+        tof_info(priv(app), "    [%lu]: %s", ysize - y - 1, spad_map_str);
     }
     tof_info(priv(app), "  spad_map:");
     for (y = 0; y < ysize; ++y) {
         for (x = 0, t = 0; x < xsize; ++x)
             t += snprintf((char *)spad_map_str + t, sizeof(spad_map_str) - t,
                           "%u ", spad_cfg->spad_map[y*xsize + x]);
-        tof_info(priv(app), "    [%u]: %s", ysize - y -1, spad_map_str);
+        tof_info(priv(app), "    [%lu]: %s", ysize - y -1, spad_map_str);
     }
 }
 #endif
@@ -367,7 +367,7 @@ static bool tmf882x_mode_app_is_8x8_mode(struct tmf882x_mode_app *app)
 
     error = tof_get_register(priv(app), TMF8X2X_COM_TMF8828_MODE, &reg);
     if (error) {
-        tof_err(priv(app), "Error reading 8x8 mode status register (%d)", error);
+        tof_err(priv(app), "Error reading 8x8 mode status register (%ld)", error);
         return false;
     }
 
@@ -387,7 +387,7 @@ static bool tmf882x_mode_app_is_shortrange_mode(struct tmf882x_mode_app *app)
     //  0: no short-range support
     error = tof_get_register(priv(app), TMF8X2X_COM_ACTIVE_RANGE, &reg);
     if (error) {
-        tof_err(priv(app), "Error reading shortrange mode register (%d)", error);
+        tof_err(priv(app), "Error reading shortrange mode register (%ld)", error);
         return false;
     }
 
@@ -531,7 +531,7 @@ static int32_t tmf882x_mode_app_i2c_msg_push(struct tmf882x_mode_app *app,
         if (rc) {
             TOF_SET_ERR_MSG(to_msg(app), ERR_COMM);
             tof_queue_msg(priv(app), to_msg(app));
-            tof_err(priv(app), "Error: %d writing App i2c_msg header", rc);
+            tof_err(priv(app), "Error: %ld writing App i2c_msg header", rc);
             return -1;
         }
 
@@ -540,7 +540,7 @@ static int32_t tmf882x_mode_app_i2c_msg_push(struct tmf882x_mode_app *app,
                            TMF8X2X_COM_CONFIG_RESULT + TMF8X2X_COM_HEADER_SIZE,
                            i2c_msg->buf, i2c_msg->size);
         if (rc) {
-            tof_err(priv(app), "Error: %d writing App i2c_msg payload", rc);
+            tof_err(priv(app), "Error: %ld writing App i2c_msg payload", rc);
             TOF_SET_ERR_MSG(to_msg(app), ERR_COMM);
             tof_queue_msg(priv(app), to_msg(app));
             return -1;
@@ -554,7 +554,7 @@ static int32_t tmf882x_mode_app_i2c_msg_push(struct tmf882x_mode_app *app,
     rc = tof_set_register(priv(app), TMF8X2X_COM_CMD_STAT,
                           i2c_msg->cmd);
     if (rc) {
-        tof_err(priv(app), "Error: %d writing App i2c_msg command", rc);
+        tof_err(priv(app), "Error: %ld writing App i2c_msg command", rc);
         TOF_SET_ERR_MSG(to_msg(app), ERR_COMM);
         tof_queue_msg(priv(app), to_msg(app));
         return -1;
@@ -591,7 +591,7 @@ static int32_t tmf882x_mode_app_i2c_msg_send(struct tmf882x_mode_app *app,
     // send command
     rc = tmf882x_mode_app_i2c_msg_push(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) sending message", rc);
+        tof_err(priv(app), "Error (%ld) sending message", rc);
         tmf882x_force_stop(app); // force stop to get to stable state
         return rc;
     }
@@ -599,7 +599,7 @@ static int32_t tmf882x_mode_app_i2c_msg_send(struct tmf882x_mode_app *app,
     // check that command status is successful
     rc = check_cmd_status(app, CMD_TIMEOUT_RETRIES);
     if (rc) {
-        tof_err(priv(app), "Error (%d) timeout waiting for msg send complete",
+        tof_err(priv(app), "Error (%ld) timeout waiting for msg send complete",
                 rc);
         tmf882x_force_stop(app); // force stop to get to stable state
         return rc;
@@ -626,7 +626,7 @@ static int32_t tmf882x_mode_app_stop_measurements(struct tmf882x_mode *self)
     tof_app_dbg(app, "Stopping app measurements");
     rc = tmf882x_mode_app_i2c_msg_send(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) stopping measurements", rc);
+        tof_err(priv(app), "Error (%ld) stopping measurements", rc);
     }
 
     app->volat_data.is_measuring = false;
@@ -650,7 +650,7 @@ static int32_t tmf882x_mode_app_start_measurements(struct tmf882x_mode *self)
 
     rc = tmf882x_mode_app_i2c_msg_send(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error:%d starting measurements", rc);
+        tof_err(priv(app), "Error:%ld starting measurements", rc);
     }
 
     //restart our capture iteration counter
@@ -673,7 +673,7 @@ static int32_t app_trim_osc(struct tmf882x_mode_app *app, int32_t steps)
         return 0;
 
     trim = (trim + steps) & 0x1FF;
-    tof_info(priv(app), "OSC Trim %#x -> %#x (%d)",
+    tof_info(priv(app), "OSC Trim %#x -> %lu (%ld)",
              app->volat_data.cfg.oscillator_trim,
              trim, steps);
     app->volat_data.cfg.oscillator_trim = trim;
@@ -709,7 +709,7 @@ static int32_t app_trim_osc(struct tmf882x_mode_app *app, int32_t steps)
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -741,8 +741,8 @@ static int32_t clock_skew_correction(struct tmf882x_mode_app *app,
         tmf882x_clk_corr_addpair(&app->volat_data.clk_cr, usec_epoch, results->sys_ticks);
     }
 
-    tof_app_dbg(app, "clock skew host_ts: %u (usec) dev_ts: %u (sys_ticks) "
-                "iratioQ15: %u", usec_epoch, results->sys_ticks,
+    tof_app_dbg(app, "clock skew host_ts: %lu (usec) dev_ts: %lu (sys_ticks) "
+                "iratioQ15: %lu", usec_epoch, results->sys_ticks,
                 app->volat_data.clk_cr.iratioQ15);
 
     // If Clock compensation correction is enabled, adjust distance results
@@ -750,8 +750,8 @@ static int32_t clock_skew_correction(struct tmf882x_mode_app *app,
         for (i = 0; i < results->num_results; ++i) {
             cr_dist = tmf882x_clk_corr_map(&app->volat_data.clk_cr,
                                            results->results[i].distance_mm);
-            tof_app_dbg(app, "clock compensation ch: %u subcapture: %u "
-                        "old_dist: %u new_dist: %u",
+            tof_app_dbg(app, "clock compensation ch: %lu subcapture: %lu "
+                        "old_dist: %lu new_dist: %lu",
                         results->results[i].channel,
                         results->results[i].sub_capture,
                         results->results[i].distance_mm, cr_dist);
@@ -864,14 +864,14 @@ static int32_t decode_result_msg(struct tmf882x_mode_app *app,
 
     result_msg->num_results = obj_cnt;
     if (obj_cnt != result_msg->valid_results) {
-        tof_info(priv(app), "Warning num objects (%u) != valid results (%u)",
+        tof_info(priv(app), "Warning num objects (%lu) != valid results (%lu)",
                  obj_cnt, result_msg->valid_results);
     }
 
     // extra data in result message? log it
     if(app->mode.debug && (tail - head) < i2c_msg->size) {
         extra_data = ((int32_t) i2c_msg->size) - (tail - head);
-        tof_app_dbg(app, "Extra result data size: %u", extra_data);
+        tof_app_dbg(app, "Extra result data size: %lu", extra_data);
         tmf882x_dump_data(to_parent(app), tail, extra_data);
     }
 
@@ -1062,7 +1062,7 @@ static int32_t decode_config_msg(struct tmf882x_mode_app *app,
     decode_8b(&head[reg_to_idx(TMF8X2X_COM_SPREAD_SPECTRUM)], &config->spread_spectrum);
     decode_8b(&head[reg_to_idx(TMF8X2X_COM_I2C_SLAVE_ADDRESS)], &config->i2c_slave_addr);
     config->i2c_slave_addr >>= TMF8X2X_COM_I2C_SLAVE_ADDRESS__7bit_slave_address__SHIFT;
-    decode_16b(&head[reg_to_idx(TMF8X2X_COM_OSC_TRIM_VALUE_LSB)], &config->oscillator_trim);
+    decode_16b(&head[reg_to_idx(TMF8X2X_COM_OSC_TRIM_VALUE_LSB)], (uint16_t *)&config->oscillator_trim);
     config->oscillator_trim &= 0x1FF;
     return 0;
 }
@@ -1098,7 +1098,7 @@ static int32_t decode_histogram_msg(struct tmf882x_mode_app *app,
     uint32_t hist_type = rid_to_histogram_type(app, i2c_msg->rid);
     const uint8_t *data = i2c_msg->buf;
 
-    tof_app_dbg(app, "Histogram Info - HIST_TYPE: %u", hist_type);
+    tof_app_dbg(app, "Histogram Info - HIST_TYPE: %lu", hist_type);
 
     // All histograms have same number of bins/channels by default
     num_bins = TMF882X_HIST_NUM_BINS;
@@ -1181,7 +1181,7 @@ static int32_t tmf882x_mode_app_i2c_msg_send_timeout(struct tmf882x_mode_app *ap
     // send command
     rc = tmf882x_mode_app_i2c_msg_push(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) sending message", rc);
+        tof_err(priv(app), "Error (%ld) sending message", rc);
         tmf882x_force_stop(app); // force stop to get to stable state
         return rc;
     }
@@ -1189,7 +1189,7 @@ static int32_t tmf882x_mode_app_i2c_msg_send_timeout(struct tmf882x_mode_app *ap
     // check that command status is successful
     rc = check_cmd_status_timeout(app, timeout_ms);
     if (rc) {
-        tof_err(priv(app), "Error (%d) timeout waiting for msg send complete",
+        tof_err(priv(app), "Error (%ld) timeout waiting for msg send complete",
                 rc);
         tmf882x_force_stop(app); // force stop to get to stable state
         return rc;
@@ -1224,7 +1224,7 @@ static int32_t tmf882x_mode_app_i2c_msg_recv(struct tmf882x_mode_app *app,
     // make sure a new message has been published
     rc = wait_for_tid_change(app);
     if (rc) {
-        tof_dbg(priv(app), "warning: %d IRQ TID never changed", rc);
+        tof_dbg(priv(app), "warning: %ld IRQ TID never changed", rc);
         TOF_SET_ERR_MSG(to_msg(app), ERR_COMM);
         tof_queue_msg(priv(app), to_msg(app));
         return -2;
@@ -1234,7 +1234,7 @@ static int32_t tmf882x_mode_app_i2c_msg_recv(struct tmf882x_mode_app *app,
     rc = tof_i2c_read(priv(app), TMF8X2X_COM_CONFIG_RESULT,
                       i2c_msg->buf, payload_sz);
     if (rc) {
-        tof_err(priv(app), "Error: %d reading App i2c_msg header", rc);
+        tof_err(priv(app), "Error: %ld reading App i2c_msg header", rc);
         TOF_SET_ERR_MSG(to_msg(app), ERR_COMM);
         tof_queue_msg(priv(app), to_msg(app));
         return -1;
@@ -1269,7 +1269,7 @@ static int32_t tmf882x_mode_app_i2c_msg_recv(struct tmf882x_mode_app *app,
                                   &i2c_msg->buf[data_read],
                                   payload_sz);
                 if (rc) {
-                    tof_err(priv(app), "Error: %d reading App i2c_msg packet",
+                    tof_err(priv(app), "Error: %ld reading App i2c_msg packet",
                             rc);
                     TOF_SET_ERR_MSG(to_msg(app), ERR_COMM);
                     tof_queue_msg(priv(app), to_msg(app));
@@ -1504,7 +1504,7 @@ static int32_t tmf882x_mode_app_handle_irq(struct tmf882x_mode *self)
         return int_stat;
     }
 
-    tof_app_dbg(app, "IRQ stat: %#x", int_stat);
+    tof_app_dbg(app, "IRQ stat: %ld", int_stat);
 
     // cache the IRQ type while processing
     app->volat_data.irq = int_stat;
@@ -1532,12 +1532,12 @@ static int32_t tmf882x_mode_app_handle_irq(struct tmf882x_mode *self)
         // All other IRQs are handled here
         rc = tmf882x_mode_app_i2c_msg_recv(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) receiving i2c message", rc);
+            tof_err(priv(app), "Error (%ld) receiving i2c message", rc);
             return rc;
         }
         rc = decode_irq_msg(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) decoding i2c message", rc);
+            tof_err(priv(app), "Error (%ld) decoding i2c message", rc);
             return rc;
         }
     }
@@ -1559,7 +1559,7 @@ static int32_t tmf882x_mode_app_get_config(struct tmf882x_mode_app *app,
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "for reading config", rc);
             return -1;
         }
@@ -1571,13 +1571,13 @@ static int32_t tmf882x_mode_app_get_config(struct tmf882x_mode_app *app,
 
     rc = i2c_msg_send_and_receive(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) reading common config", rc);
+        tof_err(priv(app), "Error (%ld) reading common config", rc);
         return -1;
     }
 
     rc = decode_config_msg(app, i2c_msg, cfg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) decoding common config", rc);
+        tof_err(priv(app), "Error (%ld) decoding common config", rc);
         return -1;
     }
 
@@ -1590,7 +1590,7 @@ static int32_t tmf882x_mode_app_get_config(struct tmf882x_mode_app *app,
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -1611,7 +1611,7 @@ static int32_t tmf882x_mode_app_push_config(struct tmf882x_mode_app *app,
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "for setting new config", rc);
             return -1;
         }
@@ -1624,7 +1624,7 @@ static int32_t tmf882x_mode_app_push_config(struct tmf882x_mode_app *app,
 
     rc = i2c_msg_send_and_receive(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) loading common config for modification",
+        tof_err(priv(app), "Error (%ld) loading common config for modification",
                 rc);
         return -1;
     }
@@ -1632,13 +1632,13 @@ static int32_t tmf882x_mode_app_push_config(struct tmf882x_mode_app *app,
     // non-batch mode, update individual values
     rc = encode_config_msg(app, i2c_msg, cfg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) encoding common config", rc);
+        tof_err(priv(app), "Error (%ld) encoding common config", rc);
         return -1;
     }
 
     rc = commit_config_msg(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) commiting common config", rc);
+        tof_err(priv(app), "Error (%ld) commiting common config", rc);
         return -1;
     }
 
@@ -1651,7 +1651,7 @@ static int32_t tmf882x_mode_app_push_config(struct tmf882x_mode_app *app,
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -1672,7 +1672,7 @@ static int32_t tmf882x_mode_app_set_config(struct tmf882x_mode_app *app,
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "for setting new config", rc);
             return -1;
         }
@@ -1685,7 +1685,7 @@ static int32_t tmf882x_mode_app_set_config(struct tmf882x_mode_app *app,
 
     rc = tmf882x_mode_app_i2c_msg_send(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) loading common config for modification",
+        tof_err(priv(app), "Error (%ld) loading common config for modification",
                 rc);
         return -1;
     }
@@ -1698,7 +1698,7 @@ static int32_t tmf882x_mode_app_set_config(struct tmf882x_mode_app *app,
         // non-batch mode, update individual values
         rc = encode_config_msg(app, i2c_msg, cfg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) encoding common config", rc);
+            tof_err(priv(app), "Error (%ld) encoding common config", rc);
             return -1;
         }
 
@@ -1711,7 +1711,7 @@ static int32_t tmf882x_mode_app_set_config(struct tmf882x_mode_app *app,
         //  config back
         rc = tmf882x_mode_app_i2c_msg_recv(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) loading common config for modification",
+            tof_err(priv(app), "Error (%ld) loading common config for modification",
                     rc);
             return -1;
         }
@@ -1719,14 +1719,14 @@ static int32_t tmf882x_mode_app_set_config(struct tmf882x_mode_app *app,
         // non-batch mode, update individual values
         rc = encode_config_msg(app, i2c_msg, cfg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) encoding common config", rc);
+            tof_err(priv(app), "Error (%ld) encoding common config", rc);
             return -1;
         }
     }
 
     rc = commit_config_msg(app, i2c_msg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) commiting common config", rc);
+        tof_err(priv(app), "Error (%ld) commiting common config", rc);
         return -1;
     }
 
@@ -1739,7 +1739,7 @@ static int32_t tmf882x_mode_app_set_config(struct tmf882x_mode_app *app,
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -1853,7 +1853,7 @@ static int32_t tmf882x_mode_app_get_spad_config(struct tmf882x_mode_app *app,
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "for reading spad config", rc);
             return -1;
         }
@@ -1872,19 +1872,19 @@ static int32_t tmf882x_mode_app_get_spad_config(struct tmf882x_mode_app *app,
 
         rc = i2c_msg_send_and_receive(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) reading spad_%u config", rc, i);
+            tof_err(priv(app), "Error (%ld) reading spad_%ld config", rc, i);
             return -1;
         }
 
         rc = decode_spad_config_msg(app, i2c_msg, &spad_cfg->spad_configs[i]);
         if (rc) {
-            tof_err(priv(app), "Error (%d) decoding spad_%u config", rc, i);
+            tof_err(priv(app), "Error (%ld) decoding spad_%ld config", rc, i);
             return -1;
         }
 
         spad_cfg->num_spad_configs++;
 
-        tof_info(priv(app), "READ Spad Config[%u]", i);
+        tof_info(priv(app), "READ Spad Config[%ld]", i);
         dump_spad_config(app, &spad_cfg->spad_configs[i]);
 
     }
@@ -1892,7 +1892,7 @@ static int32_t tmf882x_mode_app_get_spad_config(struct tmf882x_mode_app *app,
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -1975,7 +1975,7 @@ static int32_t tmf882x_mode_app_set_spad_config(struct tmf882x_mode_app *app,
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "for setting new spad config", rc);
             return -1;
         }
@@ -1987,7 +1987,7 @@ static int32_t tmf882x_mode_app_set_spad_config(struct tmf882x_mode_app *app,
             // This spad_map_id only supports one spad config
             if (num_cfg == 0) {
                 tof_err(priv(app), "Error, num spad configs needed is '1',"
-                        " %u provided", num_cfg);
+                        " %lu provided", num_cfg);
                 return -1;
             }
             num_cfg = 1;
@@ -1996,7 +1996,7 @@ static int32_t tmf882x_mode_app_set_spad_config(struct tmf882x_mode_app *app,
             // This spad_map_id only supports two spad configs
             if (num_cfg < 2) {
                 tof_err(priv(app), "Error, num spad configs needed is '2',"
-                        " %u provided", num_cfg);
+                        " %lu provided", num_cfg);
                 return -1;
             }
             num_cfg = 2;
@@ -2019,32 +2019,32 @@ static int32_t tmf882x_mode_app_set_spad_config(struct tmf882x_mode_app *app,
 
         rc = i2c_msg_send_and_receive(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) reading spad_%u config for modification",
+            tof_err(priv(app), "Error (%ld) reading spad_%lu config for modification",
                     rc, i);
             return -1;
         }
 
         rc = encode_spad_config_msg(app, i2c_msg, &spad_cfg->spad_configs[i]);
         if (rc) {
-            tof_err(priv(app), "Error (%d) encoding spad_%u config", rc, i);
+            tof_err(priv(app), "Error (%ld) encoding spad_%lu config", rc, i);
             return -1;
         }
 
         rc = commit_config_msg(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) commiting spad_%u config RID: %#x",
+            tof_err(priv(app), "Error (%ld) commiting spad_%lu config RID: %#x",
                     rc, i, i2c_msg->rid);
             return -1;
         }
 
-        tof_info(priv(app), "Write Spad Config[%u]", i);
+        tof_info(priv(app), "Write Spad Config[%lu]", i);
         dump_spad_config(app, &spad_cfg->spad_configs[i]);
     }
 
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -2070,7 +2070,7 @@ static int32_t tmf882x_mode_app_get_calib_data(struct tmf882x_mode_app *app,
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "for setting new spad config", rc);
             return -1;
         }
@@ -2085,7 +2085,7 @@ static int32_t tmf882x_mode_app_get_calib_data(struct tmf882x_mode_app *app,
         i2c_msg->size = 0;
         rc = tmf882x_mode_app_i2c_msg_send(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) sending factory cal reset cmd", rc);
+            tof_err(priv(app), "Error (%ld) sending factory cal reset cmd", rc);
         }
     }
 
@@ -2096,7 +2096,7 @@ static int32_t tmf882x_mode_app_get_calib_data(struct tmf882x_mode_app *app,
         i2c_msg->size = 0;
         rc = i2c_msg_send_and_receive(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) reading factory calibration page", rc);
+            tof_err(priv(app), "Error (%ld) reading factory calibration page", rc);
             return -1;
         }
 
@@ -2110,19 +2110,19 @@ static int32_t tmf882x_mode_app_get_calib_data(struct tmf882x_mode_app *app,
             i2c_msg->size = 0;
             rc = commit_config_msg(app, i2c_msg);
             if (rc) {
-                tof_err(priv(app), "Error (%d) switching calibration pages",
+                tof_err(priv(app), "Error (%ld) switching calibration pages",
                         rc);
                 return -1;
             }
         }
 
-        tof_info(priv(app), "Read calibration data: %u B", calib->calib_len);
+        tof_info(priv(app), "Read calibration data: %lu B", calib->calib_len);
     }
 
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -2148,7 +2148,7 @@ static int32_t tmf882x_mode_app_set_calib_data(struct tmf882x_mode_app *app,
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "for setting new spad config", rc);
             return -1;
         }
@@ -2162,7 +2162,7 @@ static int32_t tmf882x_mode_app_set_calib_data(struct tmf882x_mode_app *app,
         i2c_msg->size = 0;
         rc = tmf882x_mode_app_i2c_msg_send(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) sending factory cal reset cmd", rc);
+            tof_err(priv(app), "Error (%ld) sending factory cal reset cmd", rc);
         }
     }
 
@@ -2172,7 +2172,7 @@ static int32_t tmf882x_mode_app_set_calib_data(struct tmf882x_mode_app *app,
         i2c_msg->size = 0;
         rc = tmf882x_mode_app_i2c_msg_send(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) loading factory calibration page", rc);
+            tof_err(priv(app), "Error (%ld) loading factory calibration page", rc);
             return -1;
         }
 
@@ -2183,18 +2183,18 @@ static int32_t tmf882x_mode_app_set_calib_data(struct tmf882x_mode_app *app,
 
         rc = commit_config_msg(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) commiting calibration data config",
+            tof_err(priv(app), "Error (%ld) commiting calibration data config",
                     rc);
             return -1;
         }
 
-        tof_info(priv(app), "Write calibration data: %zu B", len + off);
+        tof_info(priv(app), "Write calibration data: %lu B", len + off);
     }
 
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -2219,7 +2219,7 @@ static int32_t tmf882x_mode_app_do_factory_calib(struct tmf882x_mode_app *app,
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "for performing factory calibration", rc);
             return -1;
         }
@@ -2230,7 +2230,7 @@ static int32_t tmf882x_mode_app_do_factory_calib(struct tmf882x_mode_app *app,
     app->volat_data.cfg.histogram_dump = 0;
     rc = tmf882x_mode_app_push_config(app, &app->volat_data.cfg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) disabling histogram dump "
+        tof_err(priv(app), "Error (%ld) disabling histogram dump "
                 "for performing factory calibration", rc);
         return -1;
     }
@@ -2244,7 +2244,7 @@ static int32_t tmf882x_mode_app_do_factory_calib(struct tmf882x_mode_app *app,
         i2c_msg->size = 0;
         rc = tmf882x_mode_app_i2c_msg_send(app, i2c_msg);
         if (rc) {
-            tof_err(priv(app), "Error (%d) sending factory cal reset cmd", rc);
+            tof_err(priv(app), "Error (%ld) sending factory cal reset cmd", rc);
         }
     }
 
@@ -2257,7 +2257,7 @@ static int32_t tmf882x_mode_app_do_factory_calib(struct tmf882x_mode_app *app,
         rc = tmf882x_mode_app_i2c_msg_send_timeout(app, i2c_msg,
                 CMD_FAC_CALIB_TIMEOUT_MS);
         if (rc) {
-            tof_err(priv(app), "Error (%d) performing factory calibration", rc);
+            tof_err(priv(app), "Error (%ld) performing factory calibration", rc);
             return -1;
         }
     }
@@ -2271,14 +2271,14 @@ static int32_t tmf882x_mode_app_do_factory_calib(struct tmf882x_mode_app *app,
     app->volat_data.cfg.histogram_dump = hist_dump_save;
     rc = tmf882x_mode_app_push_config(app, &app->volat_data.cfg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) re-loading histogram dump "
+        tof_err(priv(app), "Error (%ld) re-loading histogram dump "
                 "after performing factory calibration", rc);
     }
 
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -2332,7 +2332,7 @@ static int32_t tmf882x_mode_app_set_8x8_mode(struct tmf882x_mode_app *app, bool 
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "switching 8x8 mode", rc);
             return -1;
         }
@@ -2345,13 +2345,13 @@ static int32_t tmf882x_mode_app_set_8x8_mode(struct tmf882x_mode_app *app, bool 
     i2c_msg->size = 0;
     rc = tmf882x_mode_app_i2c_msg_send_timeout(app, i2c_msg, CMD_DEF_TIMEOUT_MS);
     if (rc) {
-        tof_err(priv(app), "Error (%d) setting 8x8 mode to %u", rc, is_8x8);
+        tof_err(priv(app), "Error (%ld) setting 8x8 mode to %u", rc, is_8x8);
         return -1;
     }
 
     // check if the switch was successful
     if (is_8x8 != tmf882x_mode_app_is_8x8_mode(app)) {
-        tof_err(priv(app), "Error (%d) setting 8x8 mode to '%u'", rc, is_8x8);
+        tof_err(priv(app), "Error (%ld) setting 8x8 mode to '%u'", rc, is_8x8);
         return -1;
     }
 
@@ -2367,7 +2367,7 @@ static int32_t tmf882x_mode_app_set_8x8_mode(struct tmf882x_mode_app *app, bool 
     }
     rc = tmf882x_mode_app_push_config(app, &app->volat_data.cfg);
     if (rc) {
-        tof_err(priv(app), "Error (%d) re-configuring after 8x8 mode"
+        tof_err(priv(app), "Error (%ld) re-configuring after 8x8 mode"
                 "switch", rc);
         return -1;
     }
@@ -2375,7 +2375,7 @@ static int32_t tmf882x_mode_app_set_8x8_mode(struct tmf882x_mode_app *app, bool 
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -2399,7 +2399,7 @@ static int32_t tmf882x_mode_app_set_shortrange_mode(struct tmf882x_mode_app *app
     if ((capture_state = is_measuring(app))) {
         rc = tmf882x_mode_app_stop_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) stopping measurements "
+            tof_err(priv(app), "Error (%ld) stopping measurements "
                     "switching shortrange mode", rc);
             return -1;
         }
@@ -2412,20 +2412,20 @@ static int32_t tmf882x_mode_app_set_shortrange_mode(struct tmf882x_mode_app *app
     i2c_msg->size = 0;
     rc = tmf882x_mode_app_i2c_msg_send_timeout(app, i2c_msg, CMD_DEF_TIMEOUT_MS);
     if (rc) {
-        tof_err(priv(app), "Error (%d) setting shortrange mode to %u", rc, is_shortrange);
+        tof_err(priv(app), "Error (%ld) setting shortrange mode to %u", rc, is_shortrange);
         return -1;
     }
 
     // check if the switch was successful
     if (is_shortrange != tmf882x_mode_app_is_shortrange_mode(app)) {
-        tof_err(priv(app), "Error (%d) setting shortrange mode to '%u'", rc, is_shortrange);
+        tof_err(priv(app), "Error (%ld) setting shortrange mode to '%u'", rc, is_shortrange);
         return -1;
     }
 
     if (capture_state) {
         rc = tmf882x_mode_app_start_measurements(&app->mode);
         if (rc) {
-            tof_err(priv(app), "Error (%d) re-starting measurements", rc);
+            tof_err(priv(app), "Error (%ld) re-starting measurements", rc);
             return -1;
         }
     }
@@ -2443,13 +2443,13 @@ static int32_t tmf882x_mode_app_ioctl(struct tmf882x_mode *self, uint32_t cmd,
     app = member_of(self, struct tmf882x_mode_app, mode);
 
     if (!VERIFY_IOCAPP(cmd)) {
-        tof_err(priv(app), "Error IOCTL cmd [%x] does not match "
+        tof_err(priv(app), "Error IOCTL cmd [%lu] does not match "
                 "APP mode type.", cmd);
         return -1;
     }
 
     if (_IOCTL_NR(cmd) >= NUM_APP_IOCTL) {
-        tof_err(priv(app), "Error IOCTL cmd [%x] does not exist", cmd);
+        tof_err(priv(app), "Error IOCTL cmd [%lu] does not exist", cmd);
         return -1;
     }
 
@@ -2503,13 +2503,13 @@ static int32_t tmf882x_mode_app_ioctl(struct tmf882x_mode *self, uint32_t cmd,
 #if (CONFIG_TMF882X_OSC_TRIM_SUPPORT())
         case APP_SET_OSC_FREQ:
             app->volat_data.target_osc_freq = (*(uint32_t *)input);
-            tof_info(priv(app), "Set target OSC frequency: %u Hz", (*(uint32_t *)input));
+            tof_info(priv(app), "Set target OSC frequency: %lu Hz", (*(uint32_t *)input));
             rc = 0;
             break;
 #endif
         case APP_GET_OSC_FREQ:
             (*(uint32_t *)output) = IRATIOQ15_TO_FREQ(app->volat_data.clk_cr.iratioQ15);
-            tof_info(priv(app), "Current OSC iratioQ15: %u (freq: %u)",
+            tof_info(priv(app), "Current OSC iratioQ15: %lu (freq: %lu)",
                      app->volat_data.clk_cr.iratioQ15, (*(uint32_t *)output));
             rc = 0;
             break;
@@ -2528,7 +2528,7 @@ static int32_t tmf882x_mode_app_ioctl(struct tmf882x_mode *self, uint32_t cmd,
             rc = 0;
             break;
         default:
-            tof_err(priv(app), "Error unhandled IOCTL cmd [%x]", cmd);
+            tof_err(priv(app), "Error unhandled IOCTL cmd [%lu]", cmd);
     }
 
     return rc;
@@ -2567,12 +2567,12 @@ static int32_t tmf882x_mode_app_open(struct tmf882x_mode *self)
     // Read Device UID
     rc = read_uid(app);
     if (rc)
-        tof_err(priv(app), "Error reading out UID: %d", rc);
+        tof_err(priv(app), "Error reading out UID: %ld", rc);
 
     // Read initial application config
     rc = tmf882x_mode_app_get_config(app, &app->volat_data.cfg);
     if (rc) {
-        tof_err(priv(app), "Error reading common cfg during open(): %d", rc);
+        tof_err(priv(app), "Error reading common cfg during open(): %ld", rc);
         return -1;
     }
 
