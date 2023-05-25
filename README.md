@@ -10,11 +10,35 @@ This code example demonstrates the ams ToF sensor's TMF8820 and TMF8828 capabili
 
 - [ModusToolbox® software](https://www.infineon.com/cms/en/design-support/tools/sdk/modustoolbox-software/) v3.0
 
-### Using the code example with a ModusToolbox IDE:
+## Using the code example
 
-1. Import the project: **File** > **Import...** > **General** > **Existing Projects into Workspace** > **Next**.
-2. Select the directory where **"RDK2_AMS_TMF882x_Demo"** resides and click  **Finish**.
-3. Select and build the project **Project ** > **Build Project**.
+Create the project and open it using one of the following:
+
+<details><summary><b>In Eclipse IDE for ModusToolbox&trade; software</b></summary>
+
+
+
+1. Click the **New Application** link in the **Quick Panel** (or, use **File** > **New** > **ModusToolbox&trade; Application**). This launches the [Project Creator](https://www.infineon.com/ModusToolboxProjectCreator) tool.
+
+2. Pick a kit supported by the code example from the list shown in the **Project Creator - Choose Board Support Package (BSP)** dialog.
+
+   When you select a supported kit, the example is reconfigured automatically to work with the kit. To work with a different supported kit later, use the [Library Manager](https://www.infineon.com/ModusToolboxLibraryManager) to choose the BSP for the supported kit. You can use the Library Manager to select or update the BSP and firmware libraries used in this application. To access the Library Manager, click the link from the **Quick Panel**.
+
+   You can also just start the application creation process again and select a different kit.
+
+   If you want to use the application for a kit not listed here, you may need to update the source files. If the kit does not have the required resources, the application may not work.
+
+3. In the **Project Creator - Select Application** dialog, choose the example by enabling the checkbox.
+
+4. (Optional) Change the suggested **New Application Name**.
+
+5. The **Application(s) Root Path** defaults to the Eclipse workspace which is usually the desired location for the application. If you want to store the application in a different location, you can change the *Application(s) Root Path* value. Applications that share libraries should be in the same root path.
+
+6. Click **Create** to complete the application creation process.
+
+For more details, see the [Eclipse IDE for ModusToolbox&trade; software user guide](https://www.infineon.com/MTBEclipseIDEUserGuide) (locally available at *{ModusToolbox&trade; software install directory}/docs_{version}/mt_ide_user_guide.pdf*).
+
+</details>
 
 ### Operation
 
