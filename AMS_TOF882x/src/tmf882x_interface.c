@@ -76,7 +76,7 @@ void tmf882x_init(struct tmf882x_tof *tof, void *priv)
 
 int32_t tmf882x_open(struct tmf882x_tof * tof)
 {
-    tmf882x_mode_t mode;
+    tmf882x_mode_t mode = TMF882X_MODE_APP;
     if (!tof) return -1;
 
     if (!tof->state.ops->tag) {
